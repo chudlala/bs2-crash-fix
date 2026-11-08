@@ -8,23 +8,32 @@ An unofficial fix for the random crashes in **BLACK SOULS II** (RPG Maker VX Ace
 
 > **Status:** v1.0.0. Built and checked against the Steam version 1.4 (`ver.txt` = `1.4`). Confirmation from real play sessions is still being collected. If it still crashes for you, please open an issue (see the end of this page).
 
-## Install
+## Install (about 30 seconds)
 
-1. Download `BS2CrashFix.rvdata2`, `install.bat` and `uninstall.bat` from the [`dist`](dist) folder (or from the latest release).
-2. In Steam, right-click **BLACK SOULS II** → **Manage** → **Browse local files**.
-3. Copy the three files into that folder, next to `Game.exe`.
-4. Double-click `install.bat`. If it says access is denied, right-click it → **Run as administrator**.
-5. Play as usual from Steam.
+1. Download **`BS2CrashFix-v1.0.0.zip`** from the [latest release](https://github.com/realchudlala/bs2-crash-fix/releases/latest).
+2. Extract it anywhere (your Downloads folder is fine).
+3. Double-click **`install.bat`**, then play from Steam as usual.
 
-`install.bat` backs up `Game.ini` to `Game.ini.bs2fix-backup` and changes one line:
+The installer finds the game through Steam by itself. If it can't, it asks you to paste the game folder path (Steam: right-click the game → **Manage** → **Browse local files**).
+
+- **"Windows protected your PC"?** Click **More info** → **Run anyway**. That's Windows' standard warning for downloaded `.bat` files.
+- **"Access is denied"?** Right-click `install.bat` → **Run as administrator**.
+
+**Uninstall:** double-click `uninstall.bat`.
+
+**After a game update** or **Verify integrity of game files**, Steam may restore `Game.ini`, which turns the fix off. Just run `install.bat` again.
+
+<details>
+<summary>What the installer changes</summary>
+
+It copies `BS2CrashFix.rvdata2` into the game folder, backs up `Game.ini` to `Game.ini.bs2fix-backup` (once, so it's always your original), and changes one line:
 
 ```ini
 Scripts=Data\Scripts.rvdata2   ->   Scripts=BS2CrashFix.rvdata2
 ```
 
-**Uninstall:** run `uninstall.bat`, or copy `Game.ini.bs2fix-backup` back over `Game.ini`.
-
-**After a game update** or **Verify integrity of game files**, Steam may restore `Game.ini`. If so, run `install.bat` again.
+`uninstall.bat` restores the backup and removes `BS2CrashFix.rvdata2`. You can also do either by hand.
+</details>
 
 ## What's actually wrong
 
@@ -89,7 +98,7 @@ This explains the usual community advice. "Load a save from before it started" w
 python build.py
 ```
 
-That writes `dist/BS2CrashFix.rvdata2` from `src/loader.rb` + `src/patch.rb`. The output contains only the code in `src/`, never any game code.
+That writes `dist/BS2CrashFix.rvdata2` (from `src/loader.rb` + `src/patch.rb`), `dist/install.bat` and `dist/uninstall.bat` (from `src/installer.ps1`), and the release zip in `release/`. The output contains only the code in `src/`, never any game code.
 
 ## Reporting problems
 

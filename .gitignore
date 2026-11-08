@@ -5,3 +5,4 @@ Scripts*.rvdata2
 Game.ini*
 *.dmp
 __pycache__/
+release/
