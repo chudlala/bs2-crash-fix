@@ -48,7 +48,7 @@ UNINSTALL
 If Windows says "Windows protected your PC", click "More info" > "Run anyway".
 If it says access is denied, right-click install.bat > Run as administrator.
 
-Details, source and bug reports: https://github.com/realchudlala/bs2-crash-fix
+Details, source and bug reports: https://github.com/chudlala/bs2-crash-fix
 """
 
 
