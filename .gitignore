@@ -1,0 +1,7 @@
+# Never commit game files, saves or crash dumps
+*.rgss3a
+Save*.rvdata2
+Scripts*.rvdata2
+Game.ini*
+*.dmp
+__pycache__/
