@@ -1,2 +1,3 @@
 *.rvdata2 binary
 *.bat text eol=crlf
+*.patch binary
