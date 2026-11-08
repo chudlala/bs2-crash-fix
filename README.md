@@ -10,7 +10,7 @@ An unofficial fix for the random crashes in **BLACK SOULS II** (RPG Maker VX Ace
 
 ## Install (about 30 seconds)
 
-1. Download **`BS2CrashFix-v1.0.0.zip`** from the [latest release](https://github.com/chudlala/bs2-crash-fix/releases/latest).
+1. Download **`BS2CrashFix-v1.0.0.zip`** from the [Releases page](https://github.com/chudlala/bs2-crash-fix/releases).
 2. Extract it anywhere (your Downloads folder is fine).
 3. Double-click **`install.bat`**, then play from Steam as usual.
 
