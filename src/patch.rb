@@ -19,9 +19,32 @@
 #==============================================================================
 
 #--- 1a. Signal Display: dispose self first, then the private viewport --------
-%w(SignalDisplayRear_Sprite SignalDisplayMiddle_Plane SignalDisplayFront_Plane).each do |name|
-  next unless Object.const_defined?(name)
-  Object.const_get(name).class_eval do
+# (Each class is reopened separately: Ruby 1.9.2 can't call super from one
+#  method body shared by several classes.)
+if Object.const_defined?(:SignalDisplayRear_Sprite)
+  class SignalDisplayRear_Sprite
+    def dispose
+      return if disposed?
+      vp = viewport
+      super
+      vp.dispose if vp && !vp.disposed?
+    end
+  end
+end
+
+if Object.const_defined?(:SignalDisplayMiddle_Plane)
+  class SignalDisplayMiddle_Plane
+    def dispose
+      return if disposed?
+      vp = viewport
+      super
+      vp.dispose if vp && !vp.disposed?
+    end
+  end
+end
+
+if Object.const_defined?(:SignalDisplayFront_Plane)
+  class SignalDisplayFront_Plane
     def dispose
       return if disposed?
       vp = viewport

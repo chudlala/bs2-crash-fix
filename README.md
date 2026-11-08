@@ -2,15 +2,17 @@
 
 An unofficial fix for the random crashes in **BLACK SOULS II** (RPG Maker VX Ace, Steam), where `Game.exe` closes with no error message after a while, most often right as a battle starts. It's the crash people usually blame on a "memory leak", and it often seems to "infect" a save until you load an older one.
 
-- No game files are replaced or redistributed. The fix is one small script plus a one-line change to `Game.ini`.
+- No game files are redistributed. The fix is one small script that the installer adds to your own copy of the game.
 - Your saves are not edited, and saves made with the fix still load without it.
-- Fully reversible: `uninstall.bat` puts everything back.
+- Fully reversible: `uninstall.bat` restores `Game.rgss3a` byte for byte.
 
-> **Status:** v1.0.0. Built and checked against the Steam version 1.4 (`ver.txt` = `1.4`). Confirmation from real play sessions is still being collected. If it still crashes for you, please open an issue (see the end of this page).
+> **Status:** v1.0.1 (experimental). Tested on the Steam version 1.4 (`ver.txt` = `1.4`): the game starts with the fix, and an in-game self-test loaded a late-game save and repeatedly tore down map graphics, including Fallen Leaves and Heat Haze maps, with no errors. Confirmation from full play sessions is still being collected. If it still crashes for you, please open an issue (see the end of this page).
+>
+> **v1.0.0 didn't work** ("Failed to load script" at startup). If you installed it, just install v1.0.1; it cleans up v1.0.0 automatically.
 
 ## Install (about 30 seconds)
 
-1. Download **`BS2CrashFix-v1.0.0.zip`** from the [Releases page](https://github.com/chudlala/bs2-crash-fix/releases).
+1. Close the game. Download **`BS2CrashFix-v1.0.1.zip`** from the [Releases page](https://github.com/chudlala/bs2-crash-fix/releases).
 2. Extract it anywhere (your Downloads folder is fine).
 3. Double-click **`install.bat`**, then play from Steam as usual.
 
@@ -21,18 +23,16 @@ The installer finds the game through Steam by itself. If it can't, it asks you t
 
 **Uninstall:** double-click `uninstall.bat`.
 
-**After a game update** or **Verify integrity of game files**, Steam may restore `Game.ini`, which turns the fix off. Just run `install.bat` again.
+**After a game update** or **Verify integrity of game files**, Steam restores `Game.rgss3a`, which removes the fix. Just run `install.bat` again.
 
 <details>
 <summary>What the installer changes</summary>
 
-It copies `BS2CrashFix.rvdata2` into the game folder, backs up `Game.ini` to `Game.ini.bs2fix-backup` (once, so it's always your original), and changes one line:
+The engine only loads its script list from inside `Game.rgss3a`, so that's where the fix goes. The installer reads the game's script list (`Data\Scripts.rvdata2`) out of your archive, inserts the fix script right before `Main`, appends the result to the **end** of `Game.rgss3a`, and points that one entry in the archive's file table at it. Nothing else in the archive moves or changes.
 
-```ini
-Scripts=Data\Scripts.rvdata2   ->   Scripts=BS2CrashFix.rvdata2
-```
+It writes `Game.rgss3a.bs2fix` next to the archive, recording the original values. `uninstall.bat` uses it to put the entry back and trim the appended data, which gives back the original `Game.rgss3a` byte for byte. Steam's **Verify integrity of game files** also restores it.
 
-`uninstall.bat` restores the backup and removes `BS2CrashFix.rvdata2`. You can also do either by hand.
+It takes a second or two and needs no extra disk space beyond about 430 KB.
 </details>
 
 ## What's actually wrong
@@ -79,7 +79,7 @@ This explains the usual community advice. "Load a save from before it started" w
 
 ## What the fix does
 
-`BS2CrashFix.rvdata2` is a tiny loader. It loads the game's own scripts from `Game.rgss3a`, runs them in their normal order, and runs [`src/patch.rb`](src/patch.rb) right before `Main`. The patch:
+The installer adds [`src/patch.rb`](src/patch.rb) to the game's own script list, right before `Main`, so the game loads it like any of its other scripts. The patch:
 
 1. **Disposes the effect sprites before the viewports are freed.** It hooks `Spriteset_Map#dispose_viewports` and fixes the dispose order in Signal Display and Heat Haze. The original dispose calls still run afterwards; disposing an already-disposed sprite does nothing in RGSS3.
 2. **Stores "off" self-switches as "absent".** Setting a self-switch to anything other than `true` deletes the entry instead of storing `false`, and dead entries are pruned when a save loads. New Game+ still resets everything exactly as before. All 289 "on" switches in a typical late save are kept.
@@ -98,7 +98,7 @@ This explains the usual community advice. "Load a save from before it started" w
 python build.py
 ```
 
-That writes `dist/BS2CrashFix.rvdata2` (from `src/loader.rb` + `src/patch.rb`), `dist/install.bat` and `dist/uninstall.bat` (from `src/installer.ps1`), and the release zip in `release/`. The output contains only the code in `src/`, never any game code.
+That writes `dist/BS2CrashFix.patch` (`src/patch.rb` as one script-list entry), `dist/install.bat` and `dist/uninstall.bat` (from `src/installer.ps1`), and the release zip in `release/`. The output contains only the code in `src/`, never any game code; the game's scripts are only ever read from the player's own `Game.rgss3a`, on their machine.
 
 ## Reporting problems
 

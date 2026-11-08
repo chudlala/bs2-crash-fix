@@ -1,22 +1,23 @@
 """Build the BS2 Crash Fix distribution.
 
-  dist/BS2CrashFix.rvdata2   loader + patch (src/loader.rb + src/patch.rb)
-  dist/install.bat           generated from src/installer.ps1
-  dist/uninstall.bat         generated from src/installer.ps1
+  dist/BS2CrashFix.patch   src/patch.rb as one RGSS3 script-list entry
+  dist/install.bat         generated from src/installer.ps1
+  dist/uninstall.bat       generated from src/installer.ps1
   release/BS2CrashFix-vX.Y.Z.zip
 
-The .rvdata2 is an RGSS3 script list holding ONE script (the loader with the
-patch embedded). It contains no game code. Usage:  python build.py
+The installer inserts BS2CrashFix.patch right before "Main" in the game's own
+script list inside Game.rgss3a, on the player's machine. Nothing here contains
+game code. Usage:  python build.py
 """
 import pathlib
 import zipfile
 import zlib
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 ROOT = pathlib.Path(__file__).resolve().parent
 DIST = ROOT / "dist"
 RELEASE = ROOT / "release"
-FIX = DIST / "BS2CrashFix.rvdata2"
+PATCH = DIST / "BS2CrashFix.patch"
 
 BAT_HEADER = """<# : BS2 Crash Fix {title} -- double-click to run
 @echo off
@@ -34,9 +35,9 @@ HOW_TO = """BS2 Crash Fix {version} (experimental)
 =====================================
 
 INSTALL
-  1. Extract this zip anywhere (Downloads is fine).
-  2. Double-click install.bat.
-  3. Play from Steam as usual.
+  1. Close the game.
+  2. Extract this zip anywhere (Downloads is fine).
+  3. Double-click install.bat, then play from Steam as usual.
 
 The installer finds the game through Steam on its own. If it can't, it asks
 you to paste the game folder (Steam: right-click the game > Manage > Browse
@@ -47,6 +48,7 @@ UNINSTALL
 
 If Windows says "Windows protected your PC", click "More info" > "Run anyway".
 If it says access is denied, right-click install.bat > Run as administrator.
+After a game update or "Verify integrity of game files", run install.bat again.
 
 Details, source and bug reports: https://github.com/chudlala/bs2-crash-fix
 """
@@ -67,23 +69,22 @@ def crlf(text):
     return text.replace("\r\n", "\n").replace("\n", "\r\n").encode("ascii")
 
 
-def build_fix():
-    patch = (ROOT / "src" / "patch.rb").read_text(encoding="utf-8").replace("\r\n", "\n")
-    loader = (ROOT / "src" / "loader.rb").read_text(encoding="utf-8").replace("\r\n", "\n")
-    assert "BS2FIX_PATCH_EOF" not in patch
-    patch.encode("ascii")  # keep the patch ASCII-only
-    code = loader.replace("__PATCH_SOURCE__", patch.rstrip("\n")).replace("__VERSION__", VERSION)
-    name = f"BS2 Crash Fix Loader {VERSION}".encode()
+def build_patch():
+    code = (ROOT / "src" / "patch.rb").read_text(encoding="utf-8").replace("\r\n", "\n")
+    code.encode("ascii")  # keep the patch ASCII-only
+    name = f"BS2 Crash Fix {VERSION}".encode()
     blob = zlib.compress(code.encode("utf-8"), 9)
-    # [[0, "name", "zlib code"]] -- strings tagged UTF-8 (:E => true)
-    data = (b"\x04\x08[\x06[\x08i\x00"
-            + b'I"' + marshal_long(len(name)) + name + b"\x06:\x06ET"
-            + b'I"' + marshal_long(len(blob)) + blob + b"\x06;\x00T")
-    FIX.write_bytes(data)
+    # One script-list entry: [0, "name", "zlib code"]. Strings are tagged UTF-8
+    # via symlink ;0 (:E), which the game's script list always defines first;
+    # the installer checks that before inserting.
+    PATCH.write_bytes(b"[\x08i\x00"
+                      + b'I"' + marshal_long(len(name)) + name + b"\x06;\x00T"
+                      + b'I"' + marshal_long(len(blob)) + blob + b"\x06;\x00T")
 
 
 def build_bats():
     body = (ROOT / "src" / "installer.ps1").read_text(encoding="utf-8")
+    body.encode("ascii")
     for mode, title in (("install", "installer"), ("uninstall", "uninstaller")):
         (DIST / f"{mode}.bat").write_bytes(crlf(BAT_HEADER.format(mode=mode, title=title) + "\n" + body))
 
@@ -92,7 +93,7 @@ def build_zip():
     RELEASE.mkdir(exist_ok=True)
     out = RELEASE / f"BS2CrashFix-v{VERSION}.zip"
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
-        for name in ("install.bat", "uninstall.bat", "BS2CrashFix.rvdata2"):
+        for name in ("install.bat", "uninstall.bat", PATCH.name):
             z.write(DIST / name, name)
         z.writestr("HOW TO INSTALL.txt", crlf(HOW_TO.format(version=VERSION)))
     return out
@@ -100,8 +101,8 @@ def build_zip():
 
 if __name__ == "__main__":
     DIST.mkdir(exist_ok=True)
-    build_fix()
+    build_patch()
     build_bats()
     out = build_zip()
-    for p in (FIX, DIST / "install.bat", DIST / "uninstall.bat", out):
+    for p in (PATCH, DIST / "install.bat", DIST / "uninstall.bat", out):
         print(f"{p.relative_to(ROOT)}  {p.stat().st_size} bytes")
